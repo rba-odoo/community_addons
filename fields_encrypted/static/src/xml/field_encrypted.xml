@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates id="template" xml:space="preserve">
+<!-- Assuming that the data send from JavaScript
+       will be in a key called value -->
+   <t t-name="fieldEncrypted">
+       <t t-esc="value"/>
+   </t>
+</templates>
