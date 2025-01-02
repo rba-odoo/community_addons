@@ -4,7 +4,7 @@
     'name': 'Encrypted Field Type For Odoo',
     'version': '15.0',
     'category': 'Security',
-    'author': "Ronak Baxi <rbaodoo@gmail.com>",
+    'author': "Ronak Baxi (rba-odoo)",
     "description": """
         Added Custom Field - Encrypted
         To Create An Encrypted Fields
