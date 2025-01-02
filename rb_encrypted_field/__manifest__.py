@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-# © 2015-TODAY LasLabs Inc.
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 {
     'name': 'Encrypted Field Type For Odoo',
-    'version': '14.0',
+    'version': '15.0',
     'category': 'Security',
-    'author': "Heartfulness Team",
+    'author': "Ronak Baxi <rbaodoo@gmail.com>",
     "description": """
         Added Custom Field - Encrypted
         To Create An Encrypted Fields
@@ -14,14 +12,19 @@
         In View Added Widget:
         widget="Encrypted"
 
-        Added aes_encryption_key = 16 Digits Of Your Encryption Key
+        Added aes_encryption_key = 16 Digits Of Your Encryption Key in your odoo config file.
     """,
-    'license': 'AGPL-3',
+    'license': 'LGPL-3',
     'installable': True,
     'application': False,
     'data': [
-        'views/assets.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'rb_encrypted_field/static/src/js/basic_fields.js',
+            'rb_encrypted_field/static/src/js/field_utils_format.js'
+        ]
+    },
     "external_dependencies": {
         "python": [
             "pycryptodome",

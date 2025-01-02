@@ -1,16 +1,15 @@
-    # -*- coding: utf-8 -*-
-# © 2015-TODAY LasLabs Inc.
-# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
-
-
-from odoo import fields
+from odoo import fields, tools
 import base64
 from Crypto.Cipher import AES
 from Crypto import Random
 import hashlib
 import logging
+
 logger = logging.getLogger(__name__)
-from odoo.tools import config
+
+KEY = tools.config.get('aes_encryption_key', 'default_key')
+KEY_HASH = hashlib.sha256(KEY.encode()).digest()
+
 
 def monkey_patch(cls):
     """ Return a method decorator to monkey-patch the given class. """
@@ -21,9 +20,6 @@ def monkey_patch(cls):
         return func
     return decorate
 
-#
-# Implement encrypt fields by monkey-patching fields.Field
-#
 
 fields.Field.__doc__ += """
 
@@ -41,7 +37,6 @@ fields.Field.__doc__ += """
 def _get_attrs(self, model, name):
     attrs = _get_attrs.super(self, model, name)
     if attrs.get('encrypt'):
-        # by default, encrypt fields are not stored and not copied
         attrs['copy'] = attrs.get('copy', False)
         attrs['compute'] = self._compute_encrypt
         if not attrs.get('readonly'):
@@ -77,32 +72,19 @@ def _inverse_encrypt(self, records):
                 record[self.encrypt] = values
 
 
-#
-# Definition and implementation of encrypted fields
-#
-
 class Encrypted(fields.Field):
-    """
-    Identical to fields.Text, except encrypted in the database
-
-    :param translate: whether the value of this field can be translated
-    """
     type = 'encrypted'
-    bs = 16
     column_type = ('text', 'text')
-    prefetch = False
-    KEY = config.options.get('aes_encryption_key')
+    bs = 16
+    key = KEY_HASH
 
-    key = hashlib.sha256(KEY.encode()).digest()
-    
     def _encrypt(self, raw):
         if raw:
             raw = self._pad(raw)
             iv = Random.new().read(AES.block_size)
             cipher = AES.new(self.key, AES.MODE_CBC, iv)
             return "AES" + str(base64.urlsafe_b64encode(iv + cipher.encrypt(raw.encode('utf-8'))), 'utf-8')
-        else:
-            return raw
+        return raw
 
     def _decrypt(self, enc):
         try:
@@ -133,59 +115,21 @@ class Encrypted(fields.Field):
         return self._encrypt(value)
 
     def convert_to_cache(self, value, record, validate=True):
-        """
-        Convert ``value`` to the cache level in ``env``; ``value`` may come
-        from an assignment, or have the format of methods
-        :meth:`BaseModel.read` or :meth:`BaseModel.write`
-
-        Params:
-            value: str
-            record: the target record for the assignment,
-                or an empty recordset
-            validate: bool when True, field-specific validation of
-                ``value`` will be performed
-        """
         return self._encrypt(value)
 
     def convert_to_read(self, value, record, use_name_get=True):
-        """
-        Convert ``value`` from the cache to a value as returned by method
-        :meth:`BaseModel.read`
-
-        Params:
-            value: str
-            use_name_get: bool when True, value's diplay name will
-                    be computed using :meth:`BaseModel.name_get`, if relevant
-                    for the field
-        """
         return False if value is None else self._decrypt(value)
 
     def convert_to_write(self, value, target=None, fnames=None):
-        """
-        Convert ``value`` from the cache to a valid value for method
-        :meth:`BaseModel.write`.
-
-        Params:
-            value: str
-            target: optional, the record to be modified with this value
-            fnames: for relational fields only, an optional collection
-                of field names to convert
-        """
         return self._decrypt(value)
 
     def convert_to_export(self, value, record):
-        """
-        Convert ``value`` from the cache to a valid value for export. The
-        parameter ``env`` is given for managing translations.
-
-        Params:
-            value: str
-        """
         if not value:
             return ''
         return self._decrypt(value)
 
     def convert_to_record(self, value, record):
         return False if value is None else self._decrypt(value)
-        
+
+
 fields.Encrypted = Encrypted
